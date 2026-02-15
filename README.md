@@ -228,9 +228,9 @@ THEN prokrastinasi = "Rendah"
 
 | Nama | NIM | Kontribusi |
 |------|-----|------------|
-| [Nama 1] | [NIM] | Analisis & Desain Fuzzy |
-| [Nama 2] | [NIM] | Implementasi Python |
-| [Nama 3] | [NIM] | UI/UX & Dokumentasi |
+| [Muhammad Farizi Dwi Permadi] | [230101010107] |
+| [Maria Angelina Handoko] | [230101010108] |
+| [Faidatul Ela Astia Ningsih] | [230101010109] |
 
 ---
 
