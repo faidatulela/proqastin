@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proqastin - Deteksi Prokrastinasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ===== RESET ===== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --teal-dark: #0d3b3f;
+            --teal-mid: #1a6b6d;
+            --teal-accent: #2db5a3;
+            --teal-light: #48c9b0;
+            --teal-btn: linear-gradient(135deg, #3cbfae 0%, #1a8a7d 100%);
+            --card-bg: #ffffff;
+            --card-radius: 16px;
+            --text-primary: #1a1a2e;
+            --text-secondary: #555;
+            --text-muted: #999;
+            --border: #e8e8e8;
+            --bg-light: #f5f5f5;
+            --orange: #e8812a;
+            --red: #e04040;
+            --green: #27ae60;
+            --yellow: #f0ad28;
+            --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--teal-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ===== STARRY BACKGROUND ===== */
+        .starfield {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background: radial-gradient(ellipse at 50% 30%, #1a5c5e 0%, #0d3b3f 40%, #081f22 100%);
+            overflow: hidden;
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle var(--dur) ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: var(--o1); }
+            100% { opacity: var(--o2); }
+        }
+
+        /* ===== LAYOUT ===== */
+        .app {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            display: flex;
+            justify-content: center;
+            padding: 20px 24px;
+        }
+
+        .logo-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .logo-icon {
+            height: 32px;
+            width: auto;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 24px 80px;
+            min-height: 70vh;
+        }
+
+        .hero h1 {
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            letter-spacing: -0.03em;
+        }
+
+        .hero p {
+            color: rgba(255,255,255,0.65);
+            font-size: clamp(0.9rem, 2vw, 1.05rem);
+            max-width: 480px;
+            margin-bottom: 40px;
+        }
+
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 36px;
+            background: var(--teal-btn);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: var(--font);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 6px 24px rgba(45,181,163,0.35);
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 32px rgba(45,181,163,0.45);
+        }
+
+        /* ===== MODAL OVERLAY ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(8,31,34,0.6);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: var(--card-radius);
+            width: 100%;
+            max-width: 580px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+            animation: modalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.15s;
+            z-index: 2;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-light);
+        }
+
+        /* ===== QUESTIONNAIRE MODAL ===== */
+        .modal-header {
+            padding: 24px 28px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-header-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .demo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: var(--text-primary);
+            color: #fff;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .demo-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--teal-light);
+            border-radius: 50%;
+        }
+
+        .modal-body {
+            padding: 20px 28px 28px;
+        }
+
+        /* ===== QUESTION ITEM ===== */
+        .q-item {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .q-item:last-child {
+            border-bottom: none;
+        }
+
+        .q-top {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .q-label {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .q-num {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .q-val {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--teal-mid);
+            white-space: nowrap;
+        }
+
+        .q-val small {
+            font-size: 0.65em;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        /* ===== TEAL SLIDER ===== */
+        .slider-wrap {
+            position: relative;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--teal-mid);
+            border: 3px solid var(--card-bg);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: transform 0.15s;
+            margin-top: -7px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--teal-mid);
+            border: 3px solid var(--card-bg);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+
+        .slider-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--teal-mid);
+            transform: translateY(-50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .q-range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* ===== SUBMIT BUTTON ===== */
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--teal-btn);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: var(--font);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 16px rgba(45,181,163,0.3);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(45,181,163,0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== RESULT MODAL ===== */
+        .result-modal .modal {
+            max-width: 620px;
+        }
+
+        .result-header {
+            padding: 24px 28px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result-header-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .result-body {
+            padding: 20px 28px 28px;
+        }
+
+        /* Input summary grid */
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .input-grid-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-light);
+            border-radius: 10px;
+        }
+
+        .input-grid-item:nth-child(5) {
+            grid-column: 1 / 2;
+        }
+
+        .ig-label {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .ig-value {
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: var(--teal-mid);
+        }
+
+        /* Score + Keterangan row */
+        .score-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        /* Gauge card */
+        .gauge-card {
+            background: var(--teal-dark);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gauge-card-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--teal-light);
+            margin-bottom: 12px;
+            letter-spacing: 0.03em;
+        }
+
+        .gauge-container {
+            position: relative;
+            width: 160px;
+            height: 90px;
+            margin-bottom: 4px;
+        }
+
+        .gauge-svg {
+            width: 160px;
+            height: 90px;
+        }
+
+        .gauge-score-display {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+
+        .gauge-score-num {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .gauge-score-num sup {
+            font-size: 0.45em;
+            font-weight: 600;
+        }
+
+        .gauge-score-label {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .gauge-kategori {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .gauge-kategori.rendah { background: rgba(39,174,96,0.2); color: var(--green); }
+        .gauge-kategori.sedang { background: rgba(240,173,40,0.2); color: var(--yellow); }
+        .gauge-kategori.tinggi { background: rgba(232,129,42,0.2); color: var(--orange); }
+        .gauge-kategori.kritis { background: rgba(224,64,64,0.2); color: var(--red); }
+
+        .gauge-kategori-icon {
+            font-size: 0.7rem;
+        }
+
+        /* Keterangan card */
+        .keterangan-card {
+            background: var(--bg-light);
+            border-radius: 14px;
+            padding: 20px;
+        }
+
+        .keterangan-title {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .keterangan-subtitle {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .keterangan-text {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Rekomendasi */
+        .rekom-section {
+            margin-bottom: 20px;
+        }
+
+        .rekom-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .rekom-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            animation: fadeSlideUp 0.3s ease both;
+        }
+
+        .rekom-item:nth-child(1) { animation-delay: 0.05s; }
+        .rekom-item:nth-child(2) { animation-delay: 0.1s; }
+        .rekom-item:nth-child(3) { animation-delay: 0.15s; }
+        .rekom-item:nth-child(4) { animation-delay: 0.2s; }
+        .rekom-item:nth-child(5) { animation-delay: 0.25s; }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .rekom-icon {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 0.7rem;
+        }
+
+        .rekom-icon.teal { background: rgba(45,181,163,0.15); color: var(--teal-mid); }
+        .rekom-icon.orange { background: rgba(232,129,42,0.15); color: var(--orange); }
+        .rekom-icon.red { background: rgba(224,64,64,0.15); color: var(--red); }
+
+        /* Reset button */
+        .reset-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--teal-btn);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: var(--font);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 16px rgba(45,181,163,0.3);
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(45,181,163,0.4);
+        }
+
+        /* ===== LOADING SPINNER ===== */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(8,31,34,0.7);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .loading-overlay.active { display: flex; }
+
+        .loader {
+            width: 44px;
+            height: 44px;
+            border: 4px solid rgba(255,255,255,0.15);
+            border-top-color: var(--teal-light);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loader-text {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .modal { margin: 10px; }
+            .modal-body, .result-body { padding: 16px 20px 24px; }
+            .input-grid { grid-template-columns: 1fr; }
+            .input-grid-item:nth-child(5) { grid-column: auto; }
+            .score-row { grid-template-columns: 1fr; }
+            .q-val { font-size: 1.3rem; }
+        }
+
+        /* ===== SCROLLBAR ===== */
+        .modal::-webkit-scrollbar { width: 6px; }
+        .modal::-webkit-scrollbar-track { background: transparent; }
+        .modal::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<!-- Starfield Background -->
+<div class="starfield">
+    <div class="stars" id="stars"></div>
+</div>
+
+<!-- App -->
+<div class="app">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo-pill">
+            <svg class="logo-icon" width="160" height="46" viewBox="0 0 160 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M26.6046 3.72414C25.1108 2.23101 22.6895 2.2315 21.1964 3.72525L8.73506 16.1917L8.72444 16.1886L8.68506 16.1928C8.70128 16.2006 8.7172 16.2083 8.7328 16.2161C6.54682 16.4451 5.61934 17.102 5.60884 17.9456C5.61254 18.2594 5.74129 18.5983 5.97778 18.9501L5.96641 18.9615C7.95369 21.9588 17.7986 25.9127 24.7636 23.2338C19.5436 25.8438 7.25026 26.3611 3.63951 21.2935C2.85537 22.1418 2.52729 23.2566 2.65084 24.3279C3.6047 29.5853 14.2689 31.0196 24.9332 23.4023L27.2409 25.71C24.3693 28.6602 20.1276 45.7967 26.4303 43.1803C26.5798 43.0788 26.7067 42.988 26.8793 42.8574L27.1602 42.5922C27.144 42.5962 27.1279 42.6 27.1119 42.6038L43.9919 26.6681C45.5592 25.1884 45.5947 22.7065 44.0702 21.1826L26.6046 3.72414ZM24.7664 8.91743L25.3433 6.60974L25.9202 8.91743L27.651 9.49436L25.9202 10.0713L25.3433 12.379L24.7664 10.0713L23.0356 9.49436L24.7664 8.91743ZM17.6255 16.4508L18.0101 14.9123L18.3947 16.4508L19.5486 16.8354L18.3947 17.22L18.0101 18.7585L17.6255 17.22L16.4717 16.8354L17.6255 16.4508ZM31.0211 29.4277L30.6365 30.9661L29.4827 31.3508L30.6365 31.7354L31.0211 33.2738L31.4057 31.7354L32.5596 31.3508L31.4057 30.9661L31.0211 29.4277Z" fill="#45D2C6"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M45.2918 5.25128C41.6831 5.25128 38.2608 6.85419 35.9505 9.62649L27.7315 19.4894L32.4775 12.3703L24.5995 15.7466C23.599 16.1754 23.348 17.4789 24.1176 18.2486L26.6528 20.7837L25.3584 22.337L28.2061 25.1846L29.7593 23.8902L32.2945 26.4254C33.0641 27.195 34.3677 26.944 34.7964 25.9436L38.1727 18.0656L31.0537 22.8116L40.9166 14.5925C43.6889 12.2823 45.2918 8.86 45.2918 5.25128ZM37.4609 13.0824C38.2472 13.8687 39.5221 13.8687 40.3085 13.0824C41.0948 12.296 41.0948 11.0211 40.3085 10.2348C39.5221 9.44841 38.2472 9.44841 37.4609 10.2348C36.6745 11.0211 36.6745 12.296 37.4609 13.0824Z" fill="#249F95"/>
+                <path opacity="0.6" d="M3.54793 21.1609C5.43339 27.6207 16.8966 27.2839 24.7614 23.2348C19.495 25.8664 7.03695 26.369 3.54793 21.1609Z" fill="#3E5D5B"/>
+                <path opacity="0.6" d="M26.4303 43.1803C21.1195 45.3849 23.2955 33.5645 25.8299 28.0245C23.9825 32.9487 22.4055 43.8038 27.1602 42.5922L26.8793 42.8574C26.7067 42.988 26.5798 43.0788 26.4303 43.1803Z" fill="#3E5D5B"/>
+                <path d="M53.4685 30V11.8115H60.2922C61.6919 11.8115 62.8638 12.0719 63.8078 12.5928C64.76 13.1136 65.4802 13.8298 65.9685 14.7412C66.4567 15.6527 66.7009 16.6862 66.7009 17.8418C66.7009 19.0055 66.4527 20.0431 65.9562 20.9546C65.468 21.8579 64.7437 22.57 63.7834 23.0908C62.8231 23.6035 61.6431 23.8599 60.2434 23.8599H55.7268V21.1499H59.7917C60.6136 21.1499 61.285 21.0116 61.8059 20.7349C62.3348 20.45 62.7214 20.0594 62.9655 19.563C63.2178 19.0584 63.3439 18.4847 63.3439 17.8418C63.3439 17.1908 63.2178 16.6211 62.9655 16.1328C62.7214 15.6364 62.3348 15.2539 61.8059 14.9854C61.285 14.7087 60.6096 14.5703 59.7795 14.5703H56.7644V30H53.4685ZM68.2953 30V16.3525H71.4081V18.6475H71.5546C71.7987 17.8499 72.226 17.2396 72.8363 16.8164C73.4467 16.3851 74.1425 16.1694 74.9237 16.1694C75.0946 16.1694 75.2899 16.1776 75.5097 16.1938C75.7375 16.2101 75.9247 16.2305 76.0712 16.2549V19.209C75.9328 19.1602 75.7172 19.1195 75.4242 19.0869C75.1312 19.0544 74.8505 19.0381 74.5819 19.0381C73.9879 19.0381 73.4589 19.1642 72.995 19.4165C72.5312 19.6688 72.1649 20.0146 71.8964 20.4541C71.636 20.8936 71.5058 21.4062 71.5058 21.9922V30H68.2953ZM82.463 30.2686C81.1284 30.2686 79.9728 29.9756 78.9962 29.3896C78.0196 28.8037 77.2628 27.9818 76.7257 26.9238C76.1967 25.8659 75.9322 24.637 75.9322 23.2373C75.9322 21.8294 76.1967 20.5965 76.7257 19.5386C77.2628 18.4725 78.0196 17.6465 78.9962 17.0605C79.9728 16.4746 81.1284 16.1816 82.463 16.1816C83.7976 16.1816 84.9532 16.4746 85.9298 17.0605C86.9063 17.6465 87.6632 18.4725 88.2003 19.5386C88.7374 20.5965 89.006 21.8294 89.006 23.2373C89.006 24.637 88.7374 25.8659 88.2003 26.9238C87.6632 27.9818 86.9063 28.8037 85.9298 29.3896C84.9532 29.9756 83.7976 30.2686 82.463 30.2686ZM82.463 27.6807C83.2035 27.6807 83.8139 27.4854 84.294 27.0947C84.7742 26.696 85.1323 26.1589 85.3683 25.4834C85.6124 24.8079 85.7345 24.0592 85.7345 23.2373C85.7345 22.3991 85.6124 21.6423 85.3683 20.9668C85.1323 20.2913 84.7742 19.7583 84.294 19.3677C83.8139 18.9689 83.2035 18.7695 82.463 18.7695C81.7387 18.7695 81.1324 18.9689 80.6441 19.3677C80.1559 19.7583 79.7896 20.2913 79.5455 20.9668C79.3095 21.6423 79.1915 22.3991 79.1915 23.2373C79.1915 24.0592 79.3095 24.8079 79.5455 25.4834C79.7896 26.1589 80.1559 26.696 80.6441 27.0947C81.1324 27.4854 81.7387 27.6807 82.463 27.6807ZM99.6458 35.1025V27.8394H99.5115C99.3406 28.173 99.1006 28.527 98.7913 28.9014C98.4821 29.2676 98.0711 29.585 97.5584 29.8535C97.0457 30.1139 96.3947 30.2441 95.6053 30.2441C94.5392 30.2441 93.5789 29.9715 92.7244 29.4263C91.8781 28.8729 91.2107 28.0713 90.7225 27.0215C90.2342 25.9717 89.99 24.6981 89.99 23.2007C89.99 21.6789 90.2382 20.3971 90.7347 19.3555C91.2392 18.3138 91.9147 17.5244 92.761 16.9873C93.6074 16.4502 94.5555 16.1816 95.6053 16.1816C96.4109 16.1816 97.0701 16.3159 97.5828 16.5845C98.0955 16.853 98.5024 17.1785 98.8035 17.561C99.1128 17.9354 99.3488 18.2853 99.5115 18.6108H99.7068V16.3525H102.844V35.1025H99.6458ZM96.4964 27.6074C97.18 27.6074 97.7578 27.4243 98.2298 27.0581C98.7099 26.6838 99.0761 26.167 99.3284 25.5078C99.5807 24.8405 99.7068 24.0674 99.7068 23.1885C99.7068 22.3014 99.5807 21.5324 99.3284 20.8813C99.0843 20.2222 98.7221 19.7135 98.242 19.3555C97.77 18.9974 97.1881 18.8184 96.4964 18.8184C95.7884 18.8184 95.1943 19.0055 94.7142 19.3799C94.234 19.7542 93.8719 20.271 93.6277 20.9302C93.3917 21.5894 93.2737 22.3421 93.2737 23.1885C93.2737 24.0348 93.3958 24.7917 93.6399 25.459C93.8841 26.1263 94.2422 26.6512 94.7142 27.0337C95.1943 27.4162 95.7884 27.6074 96.4964 27.6074ZM108.955 30.2808C108.084 30.2808 107.303 30.1261 106.611 29.8169C105.92 29.4995 105.374 29.0356 104.976 28.4253C104.577 27.8149 104.377 27.0622 104.377 26.167C104.377 25.402 104.52 24.7673 104.805 24.2627C105.09 23.7581 105.476 23.3553 105.964 23.0542C106.461 22.7531 107.018 22.5252 107.637 22.3706C108.255 22.2078 108.894 22.0939 109.553 22.0288C110.359 21.9393 111.01 21.862 111.506 21.7969C112.003 21.7318 112.361 21.626 112.581 21.4795C112.808 21.333 112.922 21.1051 112.922 20.7959V20.7349C112.922 20.0757 112.727 19.563 112.336 19.1968C111.946 18.8306 111.376 18.6475 110.627 18.6475C109.838 18.6475 109.211 18.8184 108.748 19.1602C108.292 19.502 107.983 19.9048 107.82 20.3687L104.829 19.9414C105.065 19.1113 105.456 18.4196 106.001 17.8662C106.546 17.3047 107.209 16.8856 107.991 16.6089C108.78 16.3241 109.651 16.1816 110.603 16.1816C111.254 16.1816 111.905 16.259 112.556 16.4136C113.207 16.5601 113.805 16.8123 114.351 17.1704C114.896 17.5285 115.331 18.0086 115.657 18.6108C115.982 19.2131 116.145 19.9658 116.145 20.8691V30H113.057V28.1201H112.959C112.764 28.4945 112.487 28.8485 112.129 29.1821C111.779 29.5076 111.34 29.7721 110.811 29.9756C110.29 30.179 109.671 30.2808 108.955 30.2808ZM109.773 27.9126C110.424 27.9126 110.986 27.7865 111.458 27.5342C111.93 27.2738 112.296 26.932 112.556 26.5088C112.817 26.0775 112.947 25.6095 112.947 25.105V23.5059C112.841 23.5872 112.67 23.6646 112.434 23.7378C112.198 23.8029 111.93 23.8639 111.628 23.9209C111.327 23.9779 111.03 24.0267 110.737 24.0674C110.452 24.1081 110.204 24.1406 109.993 24.165C109.513 24.2301 109.081 24.34 108.699 24.4946C108.324 24.6411 108.027 24.8446 107.808 25.105C107.588 25.3654 107.478 25.7031 107.478 26.1182C107.478 26.7122 107.694 27.1598 108.125 27.4609C108.556 27.762 109.106 27.9126 109.773 27.9126ZM129.092 19.978L126.175 20.2832C126.052 19.8356 125.788 19.4409 125.381 19.0991C124.974 18.7492 124.4 18.5742 123.66 18.5742C122.993 18.5742 122.431 18.7207 121.975 19.0137C121.528 19.3066 121.304 19.681 121.304 20.1367C121.304 20.5355 121.45 20.8651 121.743 21.1255C122.044 21.3778 122.541 21.5812 123.233 21.7358L125.564 22.2241C126.842 22.4927 127.798 22.9321 128.433 23.5425C129.068 24.1528 129.385 24.9422 129.385 25.9106C129.385 26.7651 129.137 27.522 128.64 28.1812C128.144 28.8403 127.456 29.353 126.577 29.7192C125.707 30.0854 124.702 30.2686 123.562 30.2686C121.894 30.2686 120.551 29.9186 119.534 29.2188C118.525 28.5107 117.918 27.5301 117.715 26.2769L120.852 25.9839C120.991 26.5942 121.292 27.0581 121.756 27.3755C122.228 27.6847 122.83 27.8394 123.562 27.8394C124.327 27.8394 124.942 27.6847 125.405 27.3755C125.869 27.0581 126.101 26.6715 126.101 26.2158C126.101 25.4508 125.491 24.93 124.27 24.6533L121.939 24.165C120.628 23.8802 119.66 23.4204 119.033 22.7856C118.407 22.1427 118.093 21.3249 118.093 20.332C118.093 19.4857 118.325 18.7533 118.789 18.1348C119.253 17.5163 119.9 17.0361 120.73 16.6943C121.56 16.3525 122.521 16.1816 123.611 16.1816C125.214 16.1816 126.472 16.5275 127.383 17.2192C128.303 17.9028 128.872 18.8224 129.092 19.978ZM137.718 16.3525V18.8428H129.893V16.3525H137.718ZM131.809 13.1055H135.02V25.8984C135.02 26.4355 135.138 26.8343 135.374 27.0947C135.61 27.347 135.984 27.4731 136.497 27.4731C136.635 27.4731 136.79 27.4609 136.961 27.4365C137.132 27.4121 137.286 27.3836 137.425 27.3511L137.974 29.8657C137.632 29.9715 137.286 30.0488 136.936 30.0977C136.586 30.1546 136.237 30.1831 135.887 30.1831C134.617 30.1831 133.62 29.8494 132.896 29.1821C132.172 28.5067 131.809 27.5871 131.809 26.4233V13.1055ZM139.288 30V16.3525H142.498V30H139.288ZM140.899 14.436C140.386 14.436 139.947 14.2651 139.581 13.9233C139.214 13.5815 139.031 13.1706 139.031 12.6904C139.031 12.2021 139.214 11.7871 139.581 11.4453C139.947 11.1035 140.386 10.9326 140.899 10.9326C141.404 10.9326 141.839 11.1035 142.205 11.4453C142.571 11.7871 142.754 12.1981 142.754 12.6782C142.754 13.1665 142.571 13.5815 142.205 13.9233C141.839 14.2651 141.404 14.436 140.899 14.436ZM147.889 22.0166V30H144.679V16.3525H147.828V18.6841H147.987C148.296 17.9191 148.78 17.3128 149.439 16.8652C150.107 16.4095 150.953 16.1816 151.978 16.1816C152.922 16.1816 153.744 16.381 154.444 16.7798C155.144 17.1785 155.685 17.7645 156.068 18.5376C156.458 19.3026 156.654 20.2303 156.654 21.3208V30H153.443V21.8213C153.443 20.9098 153.207 20.1978 152.735 19.6851C152.263 19.1642 151.612 18.9038 150.782 18.9038C150.221 18.9038 149.72 19.0259 149.281 19.27C148.849 19.5142 148.507 19.8682 148.255 20.332C148.011 20.7878 147.889 21.3493 147.889 22.0166Z" fill="#222222"/>
+            </svg>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <h1>Kenali Pola Menunda Sebelum<br>Deadline Menyerang</h1>
+        <p>Pendekatan Fuzzy Logic untuk Memahami Pola Produktivitas</p>
+        <button class="cta-btn" onclick="openQuiz()">Ikuti Test Sekarang!</button>
+    </section>
+</div>
+
+<!-- Questionnaire Modal -->
+<div class="modal-overlay" id="quizModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeQuiz()">&times;</button>
+        <div class="modal-header">
+            <span class="modal-header-tag">🎯 Sistem Deteksi Prokrastinasi</span>
+            <span class="demo-badge">Demo Version</span>
+        </div>
+        <div class="modal-body">
+            <form id="quizForm">
+                <!-- Q1 -->
+                <div class="q-item">
+                    <div class="q-top">
+                        <span class="q-label"><span class="q-num">1</span> Seberapa sering Anda menunda tugas?</span>
+                        <span class="q-val" id="v-frekuensi">5 <small>/ 10</small></span>
+                    </div>
+                    <div class="slider-wrap">
+                        <div class="slider-track" id="track-frekuensi"></div>
+                        <input type="range" id="frekuensi" min="0" max="10" value="5" step="1" oninput="updateSlider(this)">
+                    </div>
+                    <div class="q-range-labels"><span>Tidak Pernah</span><span>Sering</span></div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="q-item">
+                    <div class="q-top">
+                        <span class="q-label"><span class="q-num">2</span> Mulai mengerjakan H-berapa sebelum deadline?</span>
+                        <span class="q-val" id="v-waktu">H-7 <small>Hari</small></span>
+                    </div>
+                    <div class="slider-wrap">
+                        <div class="slider-track" id="track-waktu"></div>
+                        <input type="range" id="waktu" min="0" max="14" value="7" step="1" oninput="updateSlider(this)">
+                    </div>
+                    <div class="q-range-labels"><span>Hari H</span><span>2 Minggu</span></div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="q-item">
+                    <div class="q-top">
+                        <span class="q-label"><span class="q-num">3</span> Jam distraksi per hari (sosmed, game, dll)?</span>
+                        <span class="q-val" id="v-distraksi">4 <small>Jam</small></span>
+                    </div>
+                    <div class="slider-wrap">
+                        <div class="slider-track" id="track-distraksi"></div>
+                        <input type="range" id="distraksi" min="0" max="12" value="4" step="1" oninput="updateSlider(this)">
+                    </div>
+                    <div class="q-range-labels"><span>0 Jam</span><span>12 Jam</span></div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="q-item">
+                    <div class="q-top">
+                        <span class="q-label"><span class="q-num">4</span> Tingkat kesulitan untuk fokus?</span>
+                        <span class="q-val" id="v-fokus">5 <small>/ 10</small></span>
+                    </div>
+                    <div class="slider-wrap">
+                        <div class="slider-track" id="track-fokus"></div>
+                        <input type="range" id="fokus" min="0" max="10" value="5" step="1" oninput="updateSlider(this)">
+                    </div>
+                    <div class="q-range-labels"><span>Mudah Fokus</span><span>Tidak Bisa Fokus</span></div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="q-item">
+                    <div class="q-top">
+                        <span class="q-label"><span class="q-num">5</span> Persentase tugas selesai tepat waktu?</span>
+                        <span class="q-val" id="v-tepat_waktu">50 <small>%</small></span>
+                    </div>
+                    <div class="slider-wrap">
+                        <div class="slider-track" id="track-tepat_waktu"></div>
+                        <input type="range" id="tepat_waktu" min="0" max="100" value="50" step="1" oninput="updateSlider(this)">
+                    </div>
+                    <div class="q-range-labels"><span>0%</span><span>100%</span></div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">Analisis Sekarang!</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal-overlay result-modal" id="resultModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeResult()">&times;</button>
+        <div class="result-header">
+            <span class="result-header-tag">📊 Hasil Analisis</span>
+        </div>
+        <div class="result-body">
+            <!-- Data Inputan -->
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:10px;">Data Inputan Anda:</p>
+            <div class="input-grid" id="inputGrid"></div>
+
+            <!-- Score + Keterangan -->
+            <div class="score-row">
+                <div class="gauge-card">
+                    <div class="gauge-card-title">Persentase Penilaian</div>
+                    <div class="gauge-container">
+                        <svg class="gauge-svg" viewBox="0 0 160 90">
+                            <!-- Background arc -->
+                            <path d="M 15 85 A 65 65 0 0 1 145 85" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12" stroke-linecap="round"/>
+                            <!-- Score arc -->
+                            <path id="gaugeArc" d="M 15 85 A 65 65 0 0 1 145 85" fill="none" stroke="var(--orange)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 999"/>
+                        </svg>
+                        <div class="gauge-score-display">
+                            <div class="gauge-score-num" id="gaugeNum">0<sup>%</sup></div>
+                            <div class="gauge-score-label">SKOR KAMU</div>
+                        </div>
+                    </div>
+                    <div class="gauge-kategori tinggi" id="gaugeKategori">
+                        <span class="gauge-kategori-icon">▲</span>
+                        <span id="gaugeKategoriText">-</span>
+                    </div>
+                </div>
+
+                <div class="keterangan-card">
+                    <div class="keterangan-title">Keterangan</div>
+                    <div class="keterangan-subtitle">📋 Interpretasi</div>
+                    <div class="keterangan-text" id="interpretasiText"></div>
+                </div>
+            </div>
+
+            <!-- Rekomendasi -->
+            <div class="rekom-section">
+                <div class="rekom-title">Rekomendasi Buatmu:</div>
+                <div id="rekomList"></div>
+            </div>
+
+            <button class="reset-btn" onclick="resetAll()">Analisis Ulang</button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loader"></div>
+    <div class="loader-text">Menganalisis data...</div>
+</div>
+
+<script>
+// ===== STARS =====
+(function generateStars() {
+    const container = document.getElementById('stars');
+    const count = 120;
+    let html = '';
+    for (let i = 0; i < count; i++) {
+        const size = Math.random() * 2.5 + 0.5;
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const dur = Math.random() * 3 + 2;
+        const o1 = Math.random() * 0.3 + 0.1;
+        const o2 = Math.random() * 0.5 + 0.5;
+        html += `<div class="star" style="width:${size}px;height:${size}px;left:${x}%;top:${y}%;--dur:${dur}s;--o1:${o1};--o2:${o2}"></div>`;
+    }
+    container.innerHTML = html;
+})();
+
+// ===== SLIDER UPDATE =====
+function updateSlider(el) {
+    const id = el.id;
+    const val = el.value;
+    const min = parseFloat(el.min);
+    const max = parseFloat(el.max);
+    const pct = ((val - min) / (max - min)) * 100;
+
+    // Update track fill
+    const track = document.getElementById('track-' + id);
+    if (track) track.style.width = pct + '%';
+
+    // Update value display
+    const display = document.getElementById('v-' + id);
+    if (id === 'waktu') {
+        display.innerHTML = `H-${val} <small>Hari</small>`;
+    } else if (id === 'distraksi') {
+        display.innerHTML = `${val} <small>Jam</small>`;
+    } else if (id === 'tepat_waktu') {
+        display.innerHTML = `${val} <small>%</small>`;
+    } else {
+        display.innerHTML = `${val} <small>/ 10</small>`;
+    }
+}
+
+// Init slider tracks
+document.querySelectorAll('input[type="range"]').forEach(el => updateSlider(el));
+
+// ===== MODAL CONTROLS =====
+function openQuiz() {
+    document.getElementById('quizModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeQuiz() {
+    document.getElementById('quizModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function closeResult() {
+    document.getElementById('resultModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function resetAll() {
+    closeResult();
+    // Reset form values
+    document.getElementById('frekuensi').value = 5;
+    document.getElementById('waktu').value = 7;
+    document.getElementById('distraksi').value = 4;
+    document.getElementById('fokus').value = 5;
+    document.getElementById('tepat_waktu').value = 50;
+    document.querySelectorAll('input[type="range"]').forEach(el => updateSlider(el));
+    // Reopen quiz
+    setTimeout(() => openQuiz(), 200);
+}
+
+// ===== FORM SUBMISSION =====
+document.getElementById('quizForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const data = {
+        frekuensi: parseFloat(document.getElementById('frekuensi').value),
+        waktu: parseFloat(document.getElementById('waktu').value),
+        distraksi: parseFloat(document.getElementById('distraksi').value),
+        fokus: parseFloat(document.getElementById('fokus').value),
+        tepat_waktu: parseFloat(document.getElementById('tepat_waktu').value)
+    };
+
+    // Show loading
+    document.getElementById('loadingOverlay').classList.add('active');
+    document.getElementById('submitBtn').disabled = true;
+
+    try {
+        const response = await fetch('/detect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const json = await response.json();
+
+        document.getElementById('loadingOverlay').classList.remove('active');
+        document.getElementById('submitBtn').disabled = false;
+
+        if (json.success) {
+            closeQuiz();
+            setTimeout(() => showResult(json.result, data), 150);
+        } else {
+            alert('Error: ' + json.error);
+        }
+    } catch (err) {
+        // Fallback: client-side calculation
+        document.getElementById('loadingOverlay').classList.remove('active');
+        document.getElementById('submitBtn').disabled = false;
+        const fallbackResult = clientSideDetect(data);
+        closeQuiz();
+        setTimeout(() => showResult(fallbackResult, data), 150);
+    }
+});
+
+// ===== CLIENT-SIDE FALLBACK =====
+function clientSideDetect(data) {
+    const nf = data.frekuensi / 10;
+    const nw = 1 - (data.waktu / 14);
+    const nd = data.distraksi / 12;
+    const nk = data.fokus / 10;
+    const nt = 1 - (data.tepat_waktu / 100);
+    const skor = Math.round((nf * 0.25 + nw * 0.20 + nd * 0.20 + nk * 0.15 + nt * 0.20) * 100);
+
+    let kategori, rekomendasi;
+    if (skor <= 25) {
+        kategori = 'Rendah';
+        rekomendasi = [
+            'Pertahankan kebiasaan baik Anda!',
+            'Tetap konsisten dengan jadwal belajar',
+            'Tingkatkan dengan membuat goal jangka panjang'
+        ];
+    } else if (skor <= 50) {
+        kategori = 'Sedang';
+        rekomendasi = [
+            'Terapkan teknik Pomodoro (25 menit fokus, 5 menit istirahat)',
+            'Batasi penggunaan sosial media saat jam produktif',
+            'Buat to-do list harian dengan prioritas'
+        ];
+    } else if (skor <= 75) {
+        kategori = 'Tinggi';
+        rekomendasi = [
+            'Segera evaluasi kebiasaan belajar Anda!',
+            'Install aplikasi pemblokir distraksi (Forest, Cold Turkey)',
+            'Gunakan teknik time-blocking untuk setiap aktivitas',
+            'Buat deadline personal 2-3 hari sebelum deadline asli'
+        ];
+    } else {
+        kategori = 'Kritis';
+        rekomendasi = [
+            'PERLU TINDAKAN SEGERA!',
+            'Konsultasi dengan dosen pembimbing akademik',
+            'Pertimbangkan konseling di unit layanan kampus',
+            'Mulai dengan micro-task 5 menit saja'
+        ];
+    }
+
+    return {
+        skor: skor,
+        kategori: kategori,
+        rekomendasi: rekomendasi,
+        input: {
+            frekuensi_menunda: data.frekuensi,
+            waktu_mulai: data.waktu,
+            distraksi: data.distraksi,
+            kesulitan_fokus: data.fokus,
+            tugas_tepat_waktu: data.tepat_waktu
+        }
+    };
+}
+
+// ===== SHOW RESULT =====
+function showResult(result, rawData) {
+    const inp = result.input;
+
+    // Input grid
+    document.getElementById('inputGrid').innerHTML = `
+        <div class="input-grid-item"><span class="ig-label">Frekuensi Menunda</span><span class="ig-value">${inp.frekuensi_menunda}/10</span></div>
+        <div class="input-grid-item"><span class="ig-label">Waktu Mulai</span><span class="ig-value">H-${inp.waktu_mulai}</span></div>
+        <div class="input-grid-item"><span class="ig-label">Distraksi</span><span class="ig-value">${inp.distraksi} Jam</span></div>
+        <div class="input-grid-item"><span class="ig-label">Kesulitan Fokus</span><span class="ig-value">${inp.kesulitan_fokus}/10</span></div>
+        <div class="input-grid-item"><span class="ig-label">Tepat Waktu</span><span class="ig-value">${inp.tugas_tepat_waktu}%</span></div>
+    `;
+
+    // Gauge
+    const skor = result.skor;
+    const kategori = result.kategori;
+    const totalArcLen = 204; // approximate arc length for the SVG path
+    const arcFill = (skor / 100) * totalArcLen;
+
+    const gaugeArc = document.getElementById('gaugeArc');
+    const gaugeColors = { Rendah: 'var(--green)', Sedang: 'var(--yellow)', Tinggi: 'var(--orange)', Kritis: 'var(--red)' };
+    gaugeArc.setAttribute('stroke', gaugeColors[kategori] || 'var(--orange)');
+    gaugeArc.setAttribute('stroke-dasharray', `${arcFill} ${totalArcLen}`);
+
+    // Animate score number
+    const gaugeNum = document.getElementById('gaugeNum');
+    let current = 0;
+    const target = Math.round(skor);
+    const step = Math.max(1, Math.floor(target / 40));
+    const interval = setInterval(() => {
+        current += step;
+        if (current >= target) { current = target; clearInterval(interval); }
+        gaugeNum.innerHTML = current + '<sup>%</sup>';
+    }, 25);
+
+    // Kategori badge
+    const gk = document.getElementById('gaugeKategori');
+    gk.className = 'gauge-kategori ' + kategori.toLowerCase();
+    const kategoriLabels = {
+        Rendah: 'RENDAH - Anda Disiplin!',
+        Sedang: 'SEDANG - Perlu Perbaikan',
+        Tinggi: 'TINGGI - Perlu Tindakan!',
+        Kritis: 'KRITIS - Tindakan Segera!'
+    };
+    document.getElementById('gaugeKategoriText').textContent = kategoriLabels[kategori] || kategori;
+
+    // Interpretasi
+    const interp = {
+        Rendah: 'Dari hasil analisis ini, terlihat bahwa Anda memiliki manajemen waktu yang baik. Tingkat prokrastinasi Anda rendah dan tidak mengganggu performa akademik Anda.',
+        Sedang: 'Dari hasil analisis ini, terlihat bahwa Anda memiliki kecenderungan prokrastinasi pada tingkat sedang. Artinya, kebiasaan menunda belum berada pada tahap yang mengganggu secara serius, namun sudah cukup terasa dalam proses menyelesaikan tugas dan mengelola waktu.',
+        Tinggi: 'Tingkat prokrastinasi Anda cukup tinggi dan kemungkinan sudah mempengaruhi performa akademik. Diperlukan tindakan nyata dan konsisten untuk mengubah kebiasaan ini.',
+        Kritis: 'Tingkat prokrastinasi Anda sangat tinggi! Kondisi ini dapat berdampak serius pada akademik dan kesehatan mental Anda. Segera ambil tindakan dan pertimbangkan untuk mencari bantuan profesional.'
+    };
+    document.getElementById('interpretasiText').textContent = interp[kategori] || '';
+
+    // Rekomendasi
+    const iconColors = { Rendah: 'teal', Sedang: 'teal', Tinggi: 'orange', Kritis: 'red' };
+    const iconClass = iconColors[kategori] || 'teal';
+    const rekomContainer = document.getElementById('rekomList');
+    rekomContainer.innerHTML = '';
+    result.rekomendasi.forEach(r => {
+        // Strip emoji prefixes for cleaner display
+        const cleanText = r.replace(/^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FEFF}✅📵📝🎯👥🚨📍📅🤝✍️🆘👨‍🏫🧠📱📋🏥⏰💪📚]+\s*/u, '');
+        rekomContainer.innerHTML += `
+            <div class="rekom-item">
+                <div class="rekom-icon ${iconClass}">📊</div>
+                <span>${cleanText || r}</span>
+            </div>
+        `;
+    });
+
+    // Show result modal
+    document.getElementById('resultModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+</script>
+</body>
+</html>

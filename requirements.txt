@@ -1,0 +1,21 @@
+# ==========================================
+# Requirements untuk Sistem Deteksi Prokrastinasi
+# ==========================================
+
+# Core Dependencies
+numpy>=1.21.0
+scikit-fuzzy>=0.4.2
+
+# Web Framework
+flask>=2.0.0
+
+# Visualization (optional, untuk grafik)
+matplotlib>=3.5.0
+
+# ==========================================
+# Cara Install:
+# pip install -r requirements.txt
+# 
+# Atau jika ada masalah:
+# pip install numpy scikit-fuzzy flask matplotlib
+# ==========================================
